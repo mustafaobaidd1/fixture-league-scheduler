@@ -26,19 +26,30 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "screenshots": "node scripts/screenshots.mjs",
-    "check": "npm run lint && npm run typecheck && npm run format:check && npm test && npm run build && npm run test:e2e"
+    "check": "npm run lint && npm run typecheck && npm run format:check && npm test && npm run build && npm run test:e2e",
+    "validate": "vitest run --config vitest.validate.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.1",
     "vite": "^8.3.3",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@fontsource-variable/big-shoulders-display": "^5.3.0",
+    "@fontsource/barlow": "^5.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }

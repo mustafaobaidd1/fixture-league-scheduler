@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -9,6 +10,10 @@ export default defineConfig(
   },
   js.configs.recommended,
   tseslint.configs.recommended,
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ...reactHooks.configs.flat.recommended,
+  },
   {
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
