@@ -382,7 +382,10 @@ describe('engine — construction and neighbourhood search', () => {
       a = (a * 16807) % 2147483647;
       return a / 2147483647;
     };
-    const seed = seedSchedule(setup, season, canonicalSchedule(season), { random, budgetMs: 5_000 });
+    const seed = seedSchedule(setup, season, canonicalSchedule(season), {
+      random,
+      budgetMs: 5_000,
+    });
     const v = validateSchedule(setup, seed.schedule);
     expect(v.structureOk).toBe(true);
     expect(seed.violated).toBe(v.constraints.filter((c) => !c.ok).length);
