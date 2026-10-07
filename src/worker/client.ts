@@ -3,7 +3,7 @@
  * the worker script fails to load, it falls back to running the same engine on the page in
  * short slices, yielding to the browser between them.
  */
-import { Engine, type Certificate, type EngineEvent, type Outcome } from '../engine/engine';
+import type { Certificate, EngineEvent, Outcome } from '../engine/engine';
 import type { Schedule, Setup } from '../model/types';
 import type { SolveRequest, SolveResponse } from './protocol';
 
@@ -129,25 +129,27 @@ export class SolverClient {
   private solveOnMainThread(job: SolveJob, handlers: SolveHandlers): () => void {
     let cancelled = false;
     this.cancelMain?.();
-    const engine = new Engine(job.setup, {
-      timeLimitMs: job.timeLimitMs,
-      incumbent: job.incumbent,
-      sliceMs: 30,
-      yieldControl: async () => {
-        await yieldToBrowser();
-        if (cancelled) throw new Cancelled();
-      },
-      onEvent: (event) => {
-        if (!cancelled) handlers.onEvent(event);
-      },
-    });
     const cancel = () => {
       cancelled = true;
     };
     this.cancelMain = cancel;
-    engine
-      .run()
-      .then(async (outcome) => {
+    // The engine is only needed here when workers are unavailable: load it on demand.
+    import('../engine/engine')
+      .then(async ({ Engine }) => {
+        if (cancelled) return;
+        const engine = new Engine(job.setup, {
+          timeLimitMs: job.timeLimitMs,
+          incumbent: job.incumbent,
+          sliceMs: 30,
+          yieldControl: async () => {
+            await yieldToBrowser();
+            if (cancelled) throw new Cancelled();
+          },
+          onEvent: (event) => {
+            if (!cancelled) handlers.onEvent(event);
+          },
+        });
+        const outcome = await engine.run();
         if (cancelled) return;
         handlers.onDone(outcome);
         if (outcome.status === 'optimal' || outcome.status === 'unsat') {

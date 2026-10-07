@@ -145,7 +145,7 @@ export function inputIssues(setup: Setup): InputIssue[] {
           if (fixedRounds.has(key)) {
             issues.push({
               code: 'double-booked',
-              message: `${nameOf(t)} have two fixed matches in round ${r + 1}.`,
+              message: `${nameOf(t)} has two fixed matches in round ${r + 1}.`,
               constraintId: c.id,
             });
           }
@@ -170,7 +170,7 @@ export function inputIssues(setup: Setup): InputIssue[] {
           if (hc > 1) {
             issues.push({
               code: 'host-overbooked',
-              message: `${nameOf(host)} host ${nameOf(guest)} only once, but two fixed matches say so.`,
+              message: `${nameOf(host)} hosts ${nameOf(guest)} only once, but two fixed matches say so.`,
               constraintId: c.id,
             });
           }

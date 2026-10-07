@@ -31,7 +31,7 @@ function dosDateTime(date: Date): { time: number; day: number } {
   return { time, day };
 }
 
-export function zip(entries: ZipEntry[], date = new Date(2026, 0, 1)): Uint8Array {
+export function zip(entries: ZipEntry[], date = new Date(2026, 0, 1)): Uint8Array<ArrayBuffer> {
   const enc = new TextEncoder();
   const { time, day } = dosDateTime(date);
   const chunks: Uint8Array[] = [];

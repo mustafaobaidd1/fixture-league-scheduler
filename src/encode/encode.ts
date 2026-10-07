@@ -49,7 +49,7 @@ export interface SymmetryInfo {
   /** Every active constraint is unchanged when all venues are swapped. */
   venueSwapInvariant: boolean;
   /** Which symmetry-breaking scheme was applied. */
-  applied: 'none' | 'opponent-order' | 'first-round' | 'lex-rows';
+  applied: 'none' | 'opponent-order' | 'first-round';
   venueFixed: boolean;
 }
 
@@ -471,11 +471,11 @@ export class LeagueEncoding {
    *   in round r (with an odd count, team 0 is chosen as the team resting in the last round
    *   of the first leg);
    * - all interchangeable, free double: relabel so round 1 pairs (0,1), (2,3), …;
-   * - only some interchangeable: their home/away rows are lexicographically ordered;
    * - venue swap invariant: team 0 is not at home in round 1.
-   * The first three use team relabelings, the last one the global venue swap; they commute,
-   * and the lexicographic rows and the venue fix are both lex-leader constraints for the same
-   * variable order, so they can be combined.
+   * Relabelings and the global venue swap commute, so the schemes combine. (Ordering the
+   * home/away rows of partially interchangeable clubs lexicographically is also valid, but
+   * measured unreliable: up to 9× faster or slower, and it stalled feasibility on large
+   * free double round-robins, so it is not used.)
    */
   private breakSymmetry(): void {
     const s = this.season;
@@ -490,32 +490,10 @@ export class LeagueEncoding {
           sink.addClause([this.m(this.pair(2 * k, 2 * k + 1), 0)]);
         sym.applied = 'first-round';
       }
-    } else if (sym.interchangeable.length >= 2) {
-      const rows = sym.interchangeable;
-      for (let k = 0; k + 1 < rows.length; k++) this.lexLeq(rows[k], rows[k + 1]);
-      sym.applied = 'lex-rows';
     }
     if (sym.venueSwapInvariant) {
       sink.addClause([-this.h(0, 0)]);
       sym.venueFixed = true;
-    }
-  }
-
-  /** h-row(a) ≤lex h-row(b) over the rounds that own variables (false < true). */
-  private lexLeq(a: number, b: number): void {
-    const sink = this.sink;
-    let eq = 0; // 0 = "all previous positions equal" is trivially true at the start
-    for (let r = 0; r < this.baseT; r++) {
-      const x = this.h(a, r);
-      const y = this.h(b, r);
-      const pre = eq === 0 ? [] : [-eq];
-      sink.addClause([...pre, -x, y]);
-      if (r + 1 < this.baseT) {
-        const next = sink.newVar();
-        sink.addClause([...pre, x, y, next]);
-        sink.addClause([...pre, -x, -y, next]);
-        eq = next;
-      }
     }
   }
 
@@ -527,6 +505,34 @@ export class LeagueEncoding {
    * Points the solver's saved phases at a known schedule, so its first descent tries that
    * schedule. Purely a search hint: the clauses decide what is allowed.
    */
+  /** Rounds that own variables (the first half when the mirror is shared). */
+  get ownRounds(): number {
+    return this.baseT;
+  }
+
+  /**
+   * Assumptions that pin every pairing of `schedule` outside rounds [from, from + len) of the
+   * rounds that own variables. Venues stay free everywhere, so a neighbourhood can re-pair the
+   * window and re-balance home and away across the whole season.
+   */
+  pinPairingsOutside(schedule: Schedule, from: number, len: number, venuesToo = false): number[] {
+    const s = this.season;
+    // Only the scheduled meetings are assumed: "each club plays once per round" then
+    // propagates every other pairing of that round to false, so N/2 literals pin a round.
+    const lits: number[] = [];
+    for (let r = 0; r < this.baseT; r++) {
+      if (r >= from && r < from + len) continue;
+      const round = schedule.rounds[r];
+      if (!round) continue;
+      for (const m of round.matches) {
+        lits.push(this.m(this.pair(m.home, m.away), r));
+        if (venuesToo) lits.push(this.h(m.home, r), -this.h(m.away, r));
+      }
+      if (s.dummy >= 0 && round.bye !== null) lits.push(this.m(this.pair(round.bye, s.dummy), r));
+    }
+    return lits;
+  }
+
   /** Match and venue variables: the decisions that determine a schedule. */
   primaryVars(): number[] {
     return [...this.mVars, ...this.hVars];

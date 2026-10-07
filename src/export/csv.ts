@@ -35,7 +35,7 @@ export function scheduleCsv(setup: Setup, schedule: Schedule): string {
         pinned(r, m.home, m.away) ? 'Fixed' : '',
       ]);
     }
-    if (round.bye !== null) rows.push([r + 1, date, '', '', '', '', `${name(round.bye)} rest`]);
+    if (round.bye !== null) rows.push([r + 1, date, '', '', '', '', `${name(round.bye)} rests`]);
   });
   return rows.map((row) => row.map(csvField).join(',')).join('\r\n') + '\r\n';
 }

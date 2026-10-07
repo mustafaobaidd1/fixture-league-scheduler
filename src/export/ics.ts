@@ -94,7 +94,7 @@ export function teamCalendar(
       `DTEND;VALUE=DATE:${compactDate(next)}`,
       `SUMMARY:${escapeText(`${names[m.home]} v ${names[m.away]}`)}`,
       `DESCRIPTION:${escapeText(
-        `Round ${r + 1} of ${s.T}. ${names[team]} play ${home ? 'at home' : `away at ${names[m.home]}`}.`,
+        `Round ${r + 1} of ${s.T}. ${names[team]} plays ${home ? 'at home' : `away at ${names[m.home]}`}.`,
       )}`,
       `CATEGORIES:${home ? 'Home' : 'Away'}`,
       'TRANSP:TRANSPARENT',

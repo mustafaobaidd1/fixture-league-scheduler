@@ -4,21 +4,47 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fixture — a league scheduler that explains its conflicts</title>
-    <meta name="description" content="A from-scratch SAT solver schedules a full season, proves the minimum number of breaks, and explains impossible constraints." />
+    <meta
+      name="description"
+      content="A from-scratch SAT solver schedules a full season in your browser, proves the minimum number of breaks, and explains impossible constraints."
+    />
     <meta name="author" content="Mustafa Obaid" />
-    <meta name="theme-color" content="#111111" />
+    <meta name="theme-color" content="#141414" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Fixture — a league scheduler that explains its conflicts" />
-    <meta property="og:description" content="A from-scratch SAT solver schedules a full season, proves the minimum number of breaks, and explains impossible constraints." />
+    <meta
+      property="og:description"
+      content="A from-scratch SAT solver schedules a full season, proves the minimum number of breaks, and explains impossible constraints."
+    />
     <meta property="og:url" content="https://mustafaobaidd1.github.io/fixture-league-scheduler/" />
-    <meta property="og:image" content="https://mustafaobaidd1.github.io/fixture-league-scheduler/og-image.png" />
+    <meta
+      property="og:image"
+      content="https://mustafaobaidd1.github.io/fixture-league-scheduler/og-image.png"
+    />
     <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      /* First paint before the app's CSS arrives: paper, not a white flash. */
+      html {
+        background: #f3eee4;
+        color: #141414;
+      }
+      .boot {
+        font:
+          600 15px/1.4 system-ui,
+          sans-serif;
+        padding: 24px 16px;
+      }
+    </style>
   </head>
   <body>
-    <noscript>This interactive project needs JavaScript enabled.</noscript>
+    <noscript>
+      <p class="boot">
+        Fixture needs JavaScript: the SAT solver that builds the schedule runs in your browser.
+      </p>
+    </noscript>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -68,7 +68,7 @@ describe('CSV export (RFC 4180)', () => {
     expect(lines[0]).toBe('Round,Date,Home,Away,Home break,Away break,Notes');
     // 5 rounds × 2 matches + 5 byes.
     expect(lines.length - 1).toBe(15);
-    expect(lines.filter((l) => l.endsWith(' rest')).length).toBe(5);
+    expect(lines.filter((l) => l.endsWith(' rests')).length).toBe(5);
     expect(lines[1].startsWith('1,2026-08-15,')).toBe(true);
   });
 });

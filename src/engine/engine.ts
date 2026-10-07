@@ -14,6 +14,7 @@
 import { LeagueEncoding, type StructuralGroup } from '../encode/encode';
 import { inputIssues, type InputIssue } from '../model/issues';
 import { canonicalSchedule } from '../model/construct';
+import { seedSchedule } from './seed';
 import { breakBound, seasonOf } from '../model/season';
 import type { Schedule, Setup } from '../model/types';
 import { checkRup } from '../proof/rup';
@@ -28,7 +29,8 @@ export interface LiveStats extends SolverStats {
   bound: number | null;
 }
 
-export type LogKind = 'found' | 'improved' | 'optimal' | 'unsat' | 'shrink' | 'rules' | 'timeout';
+export type LogKind =
+  'seed' | 'found' | 'improved' | 'optimal' | 'unsat' | 'shrink' | 'rules' | 'timeout';
 
 export type EngineEvent =
   | { type: 'stats'; stats: LiveStats }
@@ -95,6 +97,14 @@ export interface EngineOptions {
   theoryShortcut?: boolean;
   /** Budget for the solver's proof once the incumbent meets the theoretical bound. */
   theoryProofMs?: number;
+  /** Allow large-neighbourhood search when a full improvement step stalls (default true). */
+  lns?: boolean;
+  /** How long a full improvement step may run before LNS takes over. */
+  fullStepMs?: number;
+  /** Budget of one LNS step. */
+  lnsStepMs?: number;
+  /** Budget of the constructive seed search. */
+  seedMs?: number;
   /** Resume optimisation from a known schedule (for "keep searching"). */
   incumbent?: { schedule: Schedule; breaks: number };
   /** Extra time for the explanation phase if the main budget is nearly used up. */
@@ -184,7 +194,29 @@ export class Engine {
     // A valid lower bound on breaks for this format, whatever the other constraints.
     const theory = optimising && this.options.theoryShortcut !== false ? breakBound(season) : null;
     if (this.options.warmStart !== false) {
-      const hint = this.options.incumbent?.schedule ?? canonicalSchedule(season);
+      let hint = this.options.incumbent?.schedule ?? canonicalSchedule(season);
+      const sym = this.enc.symmetry;
+      // With symmetry breaking active every club is interchangeable and the canonical labels
+      // already match the clauses; otherwise search the canonical schedule's transformations.
+      if (
+        !this.options.incumbent &&
+        sym.applied === 'none' &&
+        !sym.venueFixed &&
+        selectors.length > 0
+      ) {
+        const seed = seedSchedule(this.setup, season, hint, {
+          random: mulberry32(0xc0ffee),
+          now: this.now,
+          budgetMs: this.options.seedMs ?? 250,
+        });
+        hint = seed.schedule;
+        this.log(
+          'seed',
+          seed.violated === 0
+            ? `Construction: a relabelled de Werra schedule meets every rule (${plural(seed.breaks, 'break')}).`
+            : `Construction: the best relabelled de Werra schedule still breaks ${plural(seed.violated, 'rule')}; the solver repairs it.`,
+        );
+      }
       this.enc.warmStart(hint, (lit) => this.solver.setPhase(lit));
       for (const v of this.enc.primaryVars()) this.solver.prioritise(v);
     }
@@ -210,28 +242,69 @@ export class Engine {
       if (!optimising) return { ...this.base(), status: 'feasible', schedule: best, breaks };
     }
 
-    // Bound tightening: ask for at most B − 1 breaks until that is impossible.
+    // Bound tightening: ask for at most B − 1 breaks until that is impossible. On big seasons a
+    // full step that stalls hands over to a large-neighbourhood search (LNS): the pairings
+    // outside a window of rounds are pinned by assumptions, venues stay free, and the solver
+    // looks for fewer breaks inside that neighbourhood. When windows stop improving, one last
+    // full call gets the remaining time — only full calls can prove optimality.
+    const own = this.enc.ownRounds;
+    const win = Math.min(own, Math.max(3, Math.round(own / 4)));
+    const canLns = this.options.lns !== false && own > win;
+    const maxFails = Math.max(6, 2 * Math.ceil(own / win));
+    const random = mulberry32(0x5eed);
+    let windows: number[] = [];
+    let mode: 'full-budget' | 'lns' | 'full-final' = canLns ? 'full-budget' : 'full-final';
+    let fails = 0;
     while (breaks > 0) {
       const lit = this.enc.breaksAtMost(breaks - 1);
       if (lit === null) break;
       this.bound = breaks - 1;
       const atTheory = theory !== null && breaks <= theory.value;
       this.phase = atTheory ? 'proving' : 'improving';
-      // At the theoretical bound the incumbent is already optimal; give the solver's own
-      // proof a short budget so a hard proof cannot hold the answer back.
-      const deadline = atTheory
-        ? Math.min(this.deadline, this.now() + (this.options.theoryProofMs ?? 4_000))
-        : this.deadline;
-      const result = await this.solve(this.solver, [...selectors, lit], deadline);
+      let assumptions = [...selectors, lit];
+      let deadline = this.deadline;
+      if (atTheory) {
+        // The incumbent is already optimal; give the solver's own proof a short budget so a
+        // hard proof cannot hold the answer back.
+        deadline = Math.min(this.deadline, this.now() + (this.options.theoryProofMs ?? 3_000));
+      } else if (mode === 'lns') {
+        if (windows.length === 0) {
+          windows = Array.from({ length: own - win + 1 }, (_, i) => i);
+          for (let i = windows.length - 1; i > 0; i--) {
+            const j = Math.floor(random() * (i + 1));
+            [windows[i], windows[j]] = [windows[j], windows[i]];
+          }
+        }
+        const from = windows.pop() as number;
+        assumptions = [...assumptions, ...this.enc.pinPairingsOutside(best, from, win)];
+        deadline = Math.min(this.deadline, this.now() + (this.options.lnsStepMs ?? 300));
+      } else if (mode === 'full-budget') {
+        deadline = Math.min(this.deadline, this.now() + (this.options.fullStepMs ?? 1_500));
+      }
+      const result = await this.solve(this.solver, assumptions, deadline);
       if (result === 'sat') {
         best = this.enc.decode((l) => this.solver.litValue(l));
         breaks = countBreaks(best, this.setup.teams.length);
         this.emit({ type: 'solution', schedule: best, breaks, elapsedMs: this.elapsed() });
-        this.log('improved', `Improved to ${plural(breaks, 'break')}.`);
+        this.log(
+          'improved',
+          `Improved to ${plural(breaks, 'break')}${mode === 'lns' && !atTheory ? ' (neighbourhood search)' : ''}.`,
+        );
+        fails = 0;
+        if (mode === 'full-final' && canLns) mode = 'lns';
         continue;
       }
-      this.bound = null;
-      if (result === 'unsat') {
+      const outOfTime = this.now() >= this.deadline;
+      if (!atTheory && mode === 'lns') {
+        // A window that cannot improve (UNSAT) or did not finish says nothing global.
+        if (++fails >= maxFails) {
+          mode = 'full-final';
+          fails = 0;
+        }
+        if (!outOfTime) continue;
+      }
+      if (result === 'unsat' && !(mode === 'lns' && !atTheory)) {
+        this.bound = null;
         this.lastUnsat = this.solver.core.slice();
         this.log(
           'optimal',
@@ -240,12 +313,18 @@ export class Engine {
         return { ...this.base(), status: 'optimal', proof: 'solver', schedule: best, breaks };
       }
       if (atTheory && theory !== null) {
+        this.bound = null;
         this.log(
           'optimal',
           `${plural(breaks, 'break')} equals the theoretical minimum (${theory.source}).`,
         );
         return { ...this.base(), status: 'optimal', proof: 'theory', schedule: best, breaks };
       }
+      if (mode === 'full-budget' && !outOfTime) {
+        mode = 'lns';
+        continue;
+      }
+      this.bound = null;
       this.log('timeout', `Stopped while testing at most ${breaks - 1} breaks.`);
       return { ...this.base(), status: 'timeout', schedule: best, breaks, optimising: true };
     }
@@ -399,6 +478,18 @@ export class Engine {
   get statsSnapshot(): SolverStats | null {
     return this.lastStats;
   }
+}
+
+/** Small seeded PRNG (mulberry32): LNS window order is deterministic. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function plural(k: number, word: string): string {

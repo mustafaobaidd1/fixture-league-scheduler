@@ -72,7 +72,7 @@ describe('engine — the breaks theorem (de Werra 1981)', () => {
       plainSetup(6, { format: 'double', mirrored: true, constraints: symmetric }),
       plainSetup(6, { format: 'double', mirrored: false, constraints: [minBreaks] }),
       plainSetup(7, { format: 'double', mirrored: true, constraints: [minBreaks] }),
-      // Partially interchangeable teams (lexicographic rows).
+      // A club-specific rule: no symmetry breaking applies.
       plainSetup(6, {
         constraints: [
           minBreaks,

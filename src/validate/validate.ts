@@ -143,7 +143,7 @@ export function validateSchedule(setup: Setup, schedule: Schedule): Validation {
         meetFail(
           s.legs === 1
             ? `${name(i)} and ${name(j)} meet ${k} times.`
-            : `${name(i)} host ${name(j)} ${k} times.`,
+            : `${name(i)} hosts ${name(j)} ${k} times.`,
         );
       }
     }
@@ -228,14 +228,14 @@ function checkConstraint(
       const st = at(t, r);
       if (st === undefined) return bad('That round is not in the schedule.');
       const holds = c.venue === 'home' ? st === 'H' : c.venue === 'away' ? st === 'A' : st !== 'H';
-      return (holds ? ok : bad)(`${name(t)} are ${word[st]} in round ${r + 1}.`);
+      return (holds ? ok : bad)(`${name(t)} is ${word[st]} in round ${r + 1}.`);
     }
     case 'unavailable': {
       const t = idx(c.team);
       const r = roundIndex(c.round, s);
       const st = at(t, r);
       if (st === undefined) return bad('That round is not in the schedule.');
-      return (st === 'B' ? ok : bad)(`${name(t)} are ${word[st]} in round ${r + 1}.`);
+      return (st === 'B' ? ok : bad)(`${name(t)} is ${word[st]} in round ${r + 1}.`);
     }
     case 'fixed': {
       const a = idx(c.a);
@@ -248,7 +248,7 @@ function checkConstraint(
       );
       if (m === undefined) return bad(`${name(a)} and ${name(b)} do not meet in round ${r + 1}.`);
       const hostOk = c.host === 'either' || m.home === (c.host === 'a' ? a : b);
-      return (hostOk ? ok : bad)(`${name(m.home)} host ${name(m.away)} in round ${r + 1}.`);
+      return (hostOk ? ok : bad)(`${name(m.home)} hosts ${name(m.away)} in round ${r + 1}.`);
     }
     case 'maxRun': {
       const teams = c.team === 'all' ? setup.teams.map((_, i) => i) : [idx(c.team)];
@@ -295,7 +295,7 @@ function checkConstraint(
       for (let r = 0; r < Math.min(c.rounds, schedule.rounds.length); r++) {
         const m = schedule.rounds[r].matches.find((x) => set.has(x.home) && set.has(x.away));
         if (m !== undefined) {
-          return bad(`${name(m.home)} meet ${name(m.away)} in round ${r + 1}.`);
+          return bad(`${name(m.home)} meets ${name(m.away)} in round ${r + 1}.`);
         }
       }
       return ok(`No meetings in rounds 1–${Math.min(c.rounds, T)}.`);
@@ -308,7 +308,7 @@ function checkConstraint(
         for (let t = 0; t < setup.teams.length; t++) {
           if (breakAt[t][q]) {
             const two = at(t, q) === 'H' ? 'two home' : 'two away';
-            return bad(`${name(t)} ${q === 1 ? 'open' : 'close'} with ${two} games.`);
+            return bad(`${name(t)} ${q === 1 ? 'opens' : 'closes'} with ${two} games.`);
           }
         }
       }
