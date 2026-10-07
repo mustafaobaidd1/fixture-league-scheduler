@@ -31,16 +31,18 @@ export const StatsView = memo(function StatsView({ setup, season, validation }: 
         </div>
         <div className="tile">
           <dt>{bound?.exact ? 'Theoretical minimum' : 'Lower bound'}</dt>
-          <dd>{bound ? bound.value : '—'}</dd>
-          <p className="tile-note">
-            {bound
-              ? bound.source === 'de Werra 1981'
-                ? `de Werra (1981), ${season.legs === 1 ? 'n − 2' : '3n − 6'}, with no other rules`
-                : bound.source === 'odd team count'
-                  ? 'Byes let every club alternate'
-                  : 'At most two clubs can avoid breaks'
-              : 'No simple bound for this format'}
-          </p>
+          <dd>
+            {bound ? bound.value : '—'}
+            <span className="tile-note">
+              {bound
+                ? bound.source === 'de Werra 1981'
+                  ? `de Werra (1981), ${season.legs === 1 ? 'n − 2' : '3n − 6'}, with no other rules`
+                  : bound.source === 'odd team count'
+                    ? 'Byes let every club alternate'
+                    : 'At most two clubs can avoid breaks'
+                : 'No simple bound for this format'}
+            </span>
+          </dd>
         </div>
         <div className="tile">
           <dt>Clubs without a break</dt>

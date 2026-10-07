@@ -132,8 +132,7 @@
   text-decoration: none;
   transition:
     transform 80ms ease-out,
-    box-shadow 80ms ease-out,
-    background-color 120ms;
+    box-shadow 80ms ease-out;
 }
 
 .btn:hover:not(:disabled) {
@@ -1367,10 +1366,10 @@
 }
 
 .tile-note {
+  display: block;
   margin-top: 6px;
-  font-size: 12px;
+  font: 500 12px/1.35 var(--font-ui);
   color: var(--ink-3);
-  line-height: 1.35;
 }
 
 .block-title {

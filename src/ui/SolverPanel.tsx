@@ -77,11 +77,12 @@ export function SolverPanel({
       {!compactHeader && (
         <div className="solve-row">
           {running ? (
-            <button type="button" className="btn btn--cancel" onClick={onCancel}>
+            <button key="cancel" type="button" className="btn btn--cancel" onClick={onCancel}>
               <StopIcon /> Cancel
             </button>
           ) : (
             <button
+              key="solve"
               type="button"
               className="btn btn--solve"
               onClick={onSolve}
@@ -118,7 +119,7 @@ export function SolverPanel({
       {trace && trace.log.length > 0 && (
         <div className="log-block">
           <h3 className="block-title">Run log</h3>
-          <ol className="solve-log">
+          <ol className="solve-log" tabIndex={0} aria-label="Run log">
             {trace.log.map((l, i) => (
               <li key={i} className={`log-${l.kind}`}>
                 <span className="log-time">

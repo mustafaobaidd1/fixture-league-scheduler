@@ -28,11 +28,11 @@ export function SolveBar({
         </span>
       </div>
       {running ? (
-        <button type="button" className="btn btn--cancel" onClick={onCancel}>
+        <button key="cancel" type="button" className="btn btn--cancel" onClick={onCancel}>
           <StopIcon /> Cancel
         </button>
       ) : (
-        <button type="button" className="btn btn--solve" onClick={onSolve}>
+        <button key="solve" type="button" className="btn btn--solve" onClick={onSolve}>
           <PlayIcon /> Solve
         </button>
       )}

@@ -36,7 +36,7 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
           </button>
         </header>
 
-        <div className="how-body">
+        <div className="how-body" tabIndex={0} role="region" aria-label="How it works, full text">
           <section>
             <h3>What kind of tool this is</h3>
             <p>
@@ -264,7 +264,12 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
               </math>{' '}
               = “at least <i>j</i> of the first <i>i</i> inputs are true”:
             </p>
-            <p className="how-math">
+            <div
+              className="how-math"
+              tabIndex={0}
+              role="region"
+              aria-label="Sequential counter clauses"
+            >
               <math display="block">
                 <mrow>
                   <msub>
@@ -313,7 +318,7 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
                   </msub>
                 </mrow>
               </math>
-            </p>
+            </div>
             <p>
               The <strong>total</strong> number of breaks goes through a <em>totalizer</em>{' '}
               (Bailleux &amp; Boufkhad, 2003): a tree of unary adders whose outputs mean{' '}
