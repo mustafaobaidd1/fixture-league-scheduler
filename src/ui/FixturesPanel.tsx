@@ -133,8 +133,8 @@ export function FixturesPanel(props: Props) {
 
       {current &&
         validation &&
-        (status.tone === 'bad' || status.tone === 'warn') &&
-        !state.running && (
+        !state.running &&
+        (state.outcome?.status === 'unsat' || !validation.ok) && (
           <p className="stale-note">
             {state.outcome?.status === 'unsat'
               ? 'Showing the previous schedule: no schedule can satisfy the current rules.'

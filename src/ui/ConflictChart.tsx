@@ -13,7 +13,7 @@ const PAD = { l: 6, r: 8, t: 14, b: 20 };
 
 /** Cumulative conflicts against time, with a tick for every improved schedule. */
 export const ConflictChart = memo(function ConflictChart({ series, marks, running }: Props) {
-  const tMax = Math.max(0.05, ...series.map((p) => p.t), ...marks.map((m) => m.t));
+  const tMax = Math.max(0.002, ...series.map((p) => p.t), ...marks.map((m) => m.t));
   const cMax = Math.max(1, ...series.map((p) => p.c));
   const x = (t: number) => PAD.l + (t / tMax) * (W - PAD.l - PAD.r);
   const y = (c: number) => H - PAD.b - (c / cMax) * (H - PAD.t - PAD.b);
@@ -23,6 +23,16 @@ export const ConflictChart = memo(function ConflictChart({ series, marks, runnin
       ? `M${x(series[0].t)},${y(0)} L${pts.split(' ').join(' L')} L${x(series[series.length - 1].t)},${y(0)} Z`
       : '';
   const last = series[series.length - 1];
+  // Label ticks only where they do not collide; the last (best) one is always labelled.
+  const labelled = new Set<number>();
+  let lastX = Infinity;
+  for (let i = marks.length - 1; i >= 0; i--) {
+    const px = x(marks[i].t);
+    if (i === marks.length - 1 || lastX - px >= 16) {
+      labelled.add(i);
+      lastX = px;
+    }
+  }
   const summary =
     `Conflicts over time: ${compact(last?.c ?? 0)} conflicts in ${tMax.toFixed(2)} s.` +
     (marks.length
@@ -63,9 +73,11 @@ export const ConflictChart = memo(function ConflictChart({ series, marks, runnin
         {marks.map((m, i) => (
           <g key={i} className="chart-mark">
             <line x1={x(m.t)} x2={x(m.t)} y1={PAD.t - 4} y2={y(0)} />
-            <text x={Math.min(W - 14, Math.max(10, x(m.t)))} y={PAD.t - 5} textAnchor="middle">
-              {m.breaks}
-            </text>
+            {labelled.has(i) && (
+              <text x={Math.min(W - 14, Math.max(10, x(m.t)))} y={PAD.t - 5} textAnchor="middle">
+                {m.breaks}
+              </text>
+            )}
           </g>
         ))}
         <text x={PAD.l} y={H - 5} className="chart-tick">

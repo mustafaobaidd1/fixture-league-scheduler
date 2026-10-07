@@ -1,4 +1,5 @@
 import type { InputIssue } from '../model/issues';
+import { breakBound, seasonOf } from '../model/season';
 import type { Validation } from '../validate/validate';
 import type { AppState, Solved } from '../app/state';
 
@@ -129,10 +130,12 @@ export function statusOf(args: {
       };
     }
     if (!stale && out?.status === 'timeout') {
+      const bound = breakBound(seasonOf(state.setup));
+      const floor = bound && bound.value < b ? `; at least ${bound.value} are needed` : '';
       return {
         tone: 'warn',
         title: 'Best found in 20 s',
-        detail: `No answer within 20 s — here is the best schedule found so far (${plural(b, 'break')}).`,
+        detail: `No answer within 20 s — here is the best schedule found so far (${plural(b, 'break')}${floor}).`,
         short: 'Best so far',
         announce: `Time limit reached. Best schedule so far has ${plural(b, 'break')}.`,
         verified,

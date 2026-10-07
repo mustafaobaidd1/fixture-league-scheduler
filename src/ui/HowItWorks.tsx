@@ -453,7 +453,9 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
               The tests make the solver rediscover this: for <i>n</i> = 4, 6, …, 12 it finds{' '}
               <i>n</i> − 2 breaks by search alone and proves <i>n</i> − 3 infeasible (UNSAT); for
               mirrored seasons with <i>n</i> = 4, 6, 8 it proves 3<i>n</i> − 6. The <i>n</i> − 3
-              proofs for <i>n</i> ≤ 10 are re-checked by the independent RUP checker.
+              proofs for <i>n</i> ≤ 10 are re-checked by the independent RUP checker. The validation
+              script extends this to <i>n</i> = 16 (re-checked up to <i>n</i> = 14) and proves 3
+              <i>n</i> − 6 for mirrored seasons up to <i>n</i> = 12.
             </p>
           </section>
 
@@ -522,6 +524,10 @@ export default function HowItWorks({ onClose }: { onClose: () => void }) {
                 constraints”, CP 2003.
               </li>
             </ul>
+            <p>
+              Fonts: Big Shoulders Display and Barlow, both under the SIL Open Font License 1.1,
+              self-hosted via Fontsource. Club names and crests are fictional.
+            </p>
           </section>
         </div>
       </div>
