@@ -36,6 +36,7 @@ export class SolverClient {
   private mode: 'worker' | 'main' = typeof Worker === 'undefined' ? 'main' : 'worker';
   private nextId = 1;
   private cancelMain: (() => void) | null = null;
+  private announced = false;
 
   get usesWorker(): boolean {
     return this.mode === 'worker';
@@ -50,13 +51,20 @@ export class SolverClient {
 
   /** Starts a solve; returns a function that cancels it. */
   solve(job: SolveJob, handlers: SolveHandlers): () => void {
-    if (this.mode === 'main') return this.solveOnMainThread(job, handlers);
+    if (this.mode === 'main') {
+      if (!this.announced) {
+        this.announced = true;
+        handlers.onFallback?.('Web Workers are unavailable');
+      }
+      return this.solveOnMainThread(job, handlers);
+    }
     const id = this.nextId++;
     let worker: Worker;
     try {
       worker = this.worker ?? this.spawn();
     } catch (err) {
       this.mode = 'main';
+      this.announced = true;
       handlers.onFallback?.(err instanceof Error ? err.message : 'Workers are unavailable');
       return this.solveOnMainThread(job, handlers);
     }
@@ -98,6 +106,7 @@ export class SolverClient {
       if (!heard) {
         // The worker script never ran (blocked or failed to load): solve on the page instead.
         this.mode = 'main';
+        this.announced = true;
         handlers.onFallback?.('The background solver could not start');
         cancelFallback = this.solveOnMainThread(job, handlers);
       } else {

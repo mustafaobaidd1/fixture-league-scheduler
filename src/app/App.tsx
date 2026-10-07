@@ -319,8 +319,8 @@ export function App() {
         )}
         {(!phone || state.tab === 'schedule') && (
           <div className="col col-center">
-            {narrow && explain}
             <FixturesPanel
+              explain={narrow ? explain : null}
               setup={state.setup}
               season={season}
               state={state}

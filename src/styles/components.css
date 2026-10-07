@@ -1851,8 +1851,8 @@
   box-shadow: 6px 6px 0 var(--signal-soft);
 }
 
-.col-center > .explain {
-  margin: 0 0 16px;
+.panel-fixtures > .explain {
+  margin: 14px 0 0;
 }
 
 .explain.is-stale {

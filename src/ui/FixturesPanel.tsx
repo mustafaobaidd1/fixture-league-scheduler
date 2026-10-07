@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { download } from '../app/hooks';
 import type { AppState, Solved, View } from '../app/state';
 import { scheduleCsv } from '../export/csv';
@@ -30,6 +30,8 @@ interface Props {
   onGoToRules: () => void;
   /** Narrow layouts show the explanation above the fixtures instead of on the right. */
   explainAbove: boolean;
+  /** The explanation panel, when it belongs in this column. */
+  explain: ReactNode;
 }
 
 const VIEWS: Array<[View, string]> = [
@@ -107,6 +109,8 @@ export function FixturesPanel(props: Props) {
           </button>
         )}
       </div>
+
+      {props.explain}
 
       {current && validation && (
         <div className="fixtures-tools">
@@ -196,7 +200,7 @@ export function FixturesPanel(props: Props) {
             <StatsView setup={setup} season={season} validation={validation} />
           )}
         </>
-      ) : (
+      ) : props.explain && state.outcome?.status === 'unsat' ? null : (
         <EmptyFixtures
           explainAbove={props.explainAbove}
           state={state}
@@ -272,7 +276,7 @@ function EmptyFixtures({
         <p className="empty-figure" aria-hidden="true">
           {k}
         </p>
-        <p className="empty-title">{k === 1 ? 'An impossible rule' : `${k} rules clash`}</p>
+        <p className="empty-title">{k === 1 ? 'rule cannot hold' : 'rules clash'}</p>
         <p>
           No fixture list can satisfy every rule. The explanation{' '}
           {explainAbove ? 'above' : 'on the right'} names the smallest set to blame — relax one with
