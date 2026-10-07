@@ -369,3 +369,52 @@ describe('engine — agrees with exhaustive enumeration on tiny leagues', () => 
     }, 120_000);
   }
 });
+
+describe('engine — construction and neighbourhood search', () => {
+  it('the constructive seed meets every rule of the example at the theoretical minimum', async () => {
+    const { seedSchedule } = await import('./seed');
+    const { canonicalSchedule } = await import('../model/construct');
+    const { exampleSetup } = await import('../model/presets');
+    const setup = exampleSetup();
+    const season = seasonOf(setup);
+    let a = 1;
+    const random = () => {
+      a = (a * 16807) % 2147483647;
+      return a / 2147483647;
+    };
+    const seed = seedSchedule(setup, season, canonicalSchedule(season), { random, budgetMs: 5_000 });
+    const v = validateSchedule(setup, seed.schedule);
+    expect(v.structureOk).toBe(true);
+    expect(seed.violated).toBe(v.constraints.filter((c) => !c.ok).length);
+    expect(seed.violated).toBe(0);
+    // Relabelling, venue swaps and reversal keep de Werra's 3n − 6 breaks.
+    expect(seed.breaks).toBe(18);
+  });
+
+  it('large-neighbourhood search only ever reports valid, improving schedules', async () => {
+    const constraints: Constraint[] = [
+      minBreaks,
+      { id: 'v1', enabled: true, kind: 'venue', team: 't1', round: 2, venue: 'home' },
+      { id: 'v2', enabled: true, kind: 'venue', team: 't2', round: 2, venue: 'home' },
+      { id: 'run', enabled: true, kind: 'maxRun', team: 'all', venue: 'either', max: 2 },
+    ];
+    const setup = plainSetup(12, { format: 'double', mirrored: false, constraints });
+    const seen: number[] = [];
+    const out = await runEngine(setup, {
+      warmStart: false,
+      fullStepMs: 1,
+      lnsStepMs: 40,
+      timeLimitMs: 4_000,
+      proof: false,
+      onEvent: (e) => {
+        if (e.type === 'solution') {
+          expect(validateSchedule(setup, e.schedule).ok).toBe(true);
+          seen.push(e.breaks);
+        }
+      },
+    });
+    expect(seen.length).toBeGreaterThan(1);
+    for (let i = 1; i < seen.length; i++) expect(seen[i]).toBeLessThan(seen[i - 1]);
+    expect(['timeout', 'optimal']).toContain(out.status);
+  }, 30_000);
+});
